@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>As Aventuras de Ninny</title>
+  <style>
+    :root {
+      --primary: #FF6B6B;
+      --secondary: #4ECDC4;
+      --accent: #FFE66D;
+      --dark: #2C3E50;
+      --youtube-red: #FF0000;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #a8edd8 0%, #fed6e3 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: var(--dark);
+    }
+    header {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    h1 { font-size: 1.3rem; color: #d63031; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+    .controls { display: flex; gap: 8px; }
+    .btn {
+      background: #fff;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn.active { background: var(--primary); color: white; }
+
+    /* Botão do YouTube */
+    .btn-youtube {
+      width: 100%;
+      background: #FF0000;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 25px;
+      font-size: 1rem;
+      font-weight: bold;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 15px 0;
+      box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-youtube:hover {
+      transform: scale(1.02);
+      box-shadow: 0 6px 16px rgba(255, 0, 0, 0.4);
+    }
+    .btn-youtube:active {
+      transform: scale(0.98);
+    }
+    
+    #app {
+      width: 100%;
+      max-width: 500px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+    }
+
+    /* Menu de Episódios */
+    .episodes-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      width: 100%;
+    }
+    .ep-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .ep-card:active { transform: scale(0.95); }
+    .ep-card img { width: 100%; height: 120px; object-fit: cover; }
+    .ep-card p { padding: 8px; font-size: 0.85rem; font-weight: bold; text-align: center; color: var(--dark); }
+
+    /* Seletor de Peças */
+    .pieces-selector {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-piece-count {
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      border-radius: 15px;
+      border: 2px solid var(--secondary);
+      background: white;
+      color: var(--dark);
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-piece-count.selected {
+      background: var(--secondary);
+      color: white;
+    }
+
+    /* Área do Jogo */
+    #game-screen { display: none; width: 100%; flex-direction: column; align-items: center; }
+    .game-header { width: 100%; display: flex; justify-content: space-between; margin-bottom: 10px; }
+    
+    #board {
+      width: 320px;
+      height: 320px;
+      background: rgba(255,255,255,0.7);
+      border: 4px solid white;
+      border-radius: 12px;
+      display: grid;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+      position: relative;
+    }
+    .slot {
+      border: 1px dashed rgba(0,0,0,0.15);
+      box-sizing: border-box;
+    }
+
+    #tray {
+      width: 320px;
+      min-height: 100px;
+      max-height: 180px;
+      overflow-y: auto;
+      background: rgba(255,255,255,0.85);
+      border-radius: 12px;
+      margin-top: 15px;
+      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .piece {
+      border: 1px solid white;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      cursor: pointer;
+      background-size: 320px 320px;
+      transition: transform 0.15s;
+    }
+    .piece.selected { border: 2px solid var(--accent); transform: scale(1.1); z-index: 5; }
+
+    /* Modal de Vitória */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 80%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal-content h2 { color: #2ea44f; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+
+  <!-- Trilha Sonora Integrada -->
+  <audio id="bg-music" src="Chama Eterna.mp3" loop></audio>
+
+  <header>
+    <h1>🐧 As Aventuras de Ninny</h1>
+    <div class="controls">
+      <button id="btn-music" class="btn">🎵 Música</button>
+      <button id="btn-sound" class="btn active">🔔 Som</button>
+    </div>
+  </header>
+
+  <div id="app">
+    <!-- Menu Principal -->
+    <div id="menu-screen" style="width:100%;">
+      
+      <!-- Botão para Playlist do YouTube -->
+      <a href="https://www.youtube.com/playlist?list=PLXGIGvOrZmdE" target="_blank" rel="noopener noreferrer" class="btn-youtube">
+        ▶️ Assistir Vídeos de Ninny no YouTube
+      </a>
+
+      <h2 style="text-align:center; margin-bottom:10px; color:#333;">Escolha um Episódio:</h2>
+      <div class="episodes-grid" id="ep-grid"></div>
+    </div>
+
+    <!-- Tela do Jogo -->
+    <div id="game-screen">
+      <div class="game-header">
+        <button id="btn-back" class="btn">⬅️ Voltar</button>
+        <button id="btn-hint" class="btn">🪄 Dica</button>
+      </div>
+      <h3 id="ep-title" style="margin-bottom: 8px; font-size: 1rem; text-align: center;"></h3>
+      
+      <!-- Opções de Quantidade de Peças -->
+      <div class="pieces-selector">
+        <button class="btn-piece-count selected" data-grid="3" data-count="9">9 Peças</button>
+        <button class="btn-piece-count" data-grid="4" data-count="16">16 Peças</button>
+        <button class="btn-piece-count" data-grid="5" data-count="25">25 Peças</button>
+        <button class="btn-piece-count" data-grid="6" data-count="36">36 Peças</button>
+        <button class="btn-piece-count" data-grid="7" data-count="49">49 Peças</button>
+        <button class="btn-piece-count" data-grid="8" data-count="64">64 Peças</button>
+      </div>
+
+      <div id="board"></div>
+      <div id="tray"></div>
+    </div>
+  </div>
+
+  <!-- Modal de Vitória -->
+  <div id="modal-win" class="modal">
+    <div class="modal-content">
+      <h2>🎉 Parabéns!</h2>
+      <p>Você completou este capítulo com o Ninny!</p>
+      <button id="btn-next" class="btn active" style="margin: 15px auto 0 auto;">Próximo Episódio ➡️</button>
+    </div>
+  </div>
+
+<script>
+  const episodes = [
+    { id: 1, title: "Episódio 1 - Ninny e o Mistério da Pirâmide de Ouro", img: "Episódio 1 - Ninny e o Mistério da Pirâmide de Ouro.jpg" },
+    { id: 2, title: "Episódio 2 – O Reino Congelado do Dragão", img: "Episódio 2 – O Reino Congelado do Dragão.jpg" },
+    { id: 3, title: "Episódio 3 – O Templo Perdido da Selva", img: "Episódio 3 – O Templo Perdido da Selva.jpg" },
+    { id: 4, title: "Episódio 4 – Atlântida", img: "Episódio 4 – Atlântida.jpg" },
+    { id: 5, title: "Episódio 5 – O Castelo das Nuvens", img: "Episódio 5 – O Castelo das Nuvens.jpg" },
+    { id: 6, title: "Episódio 6 – A Montanha de Fogo", img: "Episódio 6 – A Montanha de Fogo.jpg" },
+    { id: 7, title: "Episódio 7 – A Cidade dos Gigantes de Gelo", img: "Episódio 7 – A Cidade dos Gigantes de Gelo.jpg" },
+    { id: 8, title: "Episódio 8 – A Ilha dos Dinossauros", img: "Episódio 8 – A Ilha dos Dinossauros.jpg" },
+    { id: 9, title: "Episódio 9 – O Vale dos Dragões", img: "Episódio 9 – O Vale dos Dragões.jpg" },
+    { id: 10, title: "Episódio 10 – A Biblioteca dos Exploradores", img: "Episódio 10 – A Biblioteca dos Exploradores.jpg" }
+  ];
+
+  let currentEp = 0;
+  let currentGridSize = 3;
+  let selectedPiece = null;
+  let soundEnabled = true;
+  let musicEnabled = false;
+  let audioCtx = null;
+
+  const bgMusic = document.getElementById('bg-music');
+
+  function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+
+  function playSound(freq, duration) {
+    if (!soundEnabled) return;
+    initAudio();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+    osc.stop(audioCtx.currentTime + duration);
+  }
+
+  function toggleMusic() {
+    musicEnabled = !musicEnabled;
+    const btnMusic = document.getElementById('btn-music');
+    if (musicEnabled) {
+      bgMusic.play().then(() => {
+        btnMusic.classList.add('active');
+      }).catch(() => {});
+    } else {
+      bgMusic.pause();
+      btnMusic.classList.remove('active');
+    }
+  }
+
+  const epGrid = document.getElementById('ep-grid');
+  episodes.forEach((ep, index) => {
+    const card = document.createElement('div');
+    card.className = 'ep-card';
+    card.innerHTML = `<img src="${encodeURIComponent(ep.img)}" alt="${ep.title}"><p>${ep.title}</p>`;
+    card.onclick = () => startEpisode(index);
+    epGrid.appendChild(card);
+  });
+
+  function startEpisode(index) {
+    currentEp = index;
+    document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('game-screen').style.display = 'flex';
+    document.getElementById('ep-title').innerText = episodes[index].title;
+    buildPuzzle(episodes[index].img, currentGridSize);
+  }
+
+  function buildPuzzle(imgSrc, gridCount) {
+    const board = document.getElementById('board');
+    const tray = document.getElementById('tray');
+    board.innerHTML = '';
+    tray.innerHTML = '';
+    selectedPiece = null;
+
+    board.style.gridTemplateColumns = `repeat(${gridCount}, 1fr)`;
+    const pieceSize = 320 / gridCount;
+
+    let pieces = [];
+    for (let row = 0; row < gridCount; row++) {
+      for (let col = 0; col < gridCount; col++) {
+        const id = `${row}-${col}`;
+        
+        const slot = document.createElement('div');
+        slot.className = 'slot';
+        slot.dataset.id = id;
+        slot.onclick = () => placePieceInSlot(slot);
+        board.appendChild(slot);
+
+        const piece = document.createElement('div');
+        piece.className = 'piece';
+        piece.dataset.id = id;
+        piece.style.width = `${pieceSize - 2}px`;
+        piece.style.height = `${pieceSize - 2}px`;
+        piece.style.backgroundImage = `url("${encodeURIComponent(imgSrc)}")`;
+        piece.style.backgroundPosition = `-${col * pieceSize}px -${row * pieceSize}px`;
+        piece.onclick = (e) => {
+          e.stopPropagation();
+          selectPiece(piece);
+        };
+        pieces.push(piece);
+      }
+    }
+
+    pieces.sort(() => Math.random() - 0.5);
+    pieces.forEach(p => tray.appendChild(p));
+  }
+
+  function selectPiece(piece) {
+    playSound(440, 0.1);
+    document.querySelectorAll('.piece').forEach(p => p.classList.remove('selected'));
+    selectedPiece = piece;
+    piece.classList.add('selected');
+  }
+
+  function placePieceInSlot(slot) {
+    if (!selectedPiece) return;
+
+    if (slot.dataset.id === selectedPiece.dataset.id) {
+      playSound(587, 0.2);
+      slot.appendChild(selectedPiece);
+      selectedPiece.classList.remove('selected');
+      selectedPiece.style.border = 'none';
+      selectedPiece.style.width = '100%';
+      selectedPiece.style.height = '100%';
+      selectedPiece.onclick = null;
+      selectedPiece = null;
+
+      checkWin();
+    } else {
+      playSound(200, 0.2);
+    }
+  }
+
+  function checkWin() {
+    const slots = document.querySelectorAll('.slot');
+    const completed = Array.from(slots).every(slot => slot.children.length > 0);
+    if (completed) {
+      playSound(880, 0.5);
+      setTimeout(() => {
+        document.getElementById('modal-win').style.display = 'flex';
+      }, 300);
+    }
+  }
+
+  document.querySelectorAll('.btn-piece-count').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.btn-piece-count').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      currentGridSize = parseInt(btn.dataset.grid);
+      buildPuzzle(episodes[currentEp].img, currentGridSize);
+    };
+  });
+
+  document.getElementById('btn-back').onclick = () => {
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('menu-screen').style.display = 'block';
+  };
+
+  document.getElementById('btn-next').onclick = () => {
+    document.getElementById('modal-win').style.display = 'none';
+    if (currentEp < episodes.length - 1) {
+      startEpisode(currentEp + 1);
+    } else {
+      document.getElementById('btn-back').click();
+    }
+  };
+
+  document.getElementById('btn-music').onclick = toggleMusic;
+  document.getElementById('btn-sound').onclick = () => {
+    soundEnabled = !soundEnabled;
+    document.getElementById('btn-sound').classList.toggle('active', soundEnabled);
+  };
+</script>
+</body>
+</html>
